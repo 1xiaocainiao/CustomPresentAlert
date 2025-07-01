@@ -137,7 +137,7 @@ class LXAlertController: UIViewController {
     }
     
     private func setupViews() {
-        view.backgroundColor = .blue
+        view.backgroundColor = .clear
         
         contentView.translatesAutoresizingMaskIntoConstraints = false
         contentView.layer.cornerRadius = config.cornerRadius
