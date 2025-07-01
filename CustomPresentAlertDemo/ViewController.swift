@@ -42,6 +42,30 @@ class ViewController: UIViewController {
         // Do any additional setup after loading the view.
     }
     
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        print("viewWillAppear")
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
+        print("viewWillDisappear")
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        
+        print("viewDidAppear")
+    }
+    
+    override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
+        
+        print("viewDidDisappear")
+    }
+    
     @objc func showCustom() {
         var config = AlertConfig()
         config.style = .alert
@@ -74,7 +98,7 @@ class ViewController: UIViewController {
                                       config: config)
         
         // 添加按钮 - 只有两个按钮时水平排列
-        alert.addAction(LXAlertAction(title: "测试", style: .cancel))
+//        alert.addAction(LXAlertAction(title: "测试", style: .cancel))
         alert.addAction(LXAlertAction(title: "取消", style: .cancel))
         alert.addAction(LXAlertAction(title: "确认", style: .destructive, handler: {
             print("用户确认了操作")

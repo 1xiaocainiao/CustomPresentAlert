@@ -48,6 +48,9 @@ class AlertTransitionAnimator: NSObject, UIViewControllerAnimatedTransitioning {
                 toVC.view.alpha = 0
             }
             
+            fromVC.beginAppearanceTransition(false, animated: true)
+            toVC.beginAppearanceTransition(true, animated: true)
+            
             UIView.animate(withDuration: duration, animations: {
                 switch self.config.animationType {
                 case .center:
@@ -58,6 +61,9 @@ class AlertTransitionAnimator: NSObject, UIViewControllerAnimatedTransitioning {
                     toVC.view.alpha = 1
                 }
             }) { _ in
+                fromVC.endAppearanceTransition()
+                toVC.endAppearanceTransition()
+                
                 transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
             }
         } else {
@@ -78,6 +84,9 @@ class AlertTransitionAnimator: NSObject, UIViewControllerAnimatedTransitioning {
             default: break
             }
             
+            fromVC.beginAppearanceTransition(false, animated: true)
+            toVC.beginAppearanceTransition(true, animated: true)
+            
             UIView.animate(withDuration: duration, animations: {
                 switch self.config.animationType {
                 case .center:
@@ -89,6 +98,9 @@ class AlertTransitionAnimator: NSObject, UIViewControllerAnimatedTransitioning {
                     fromVC.view.frame = finalFrame
                 }
             }) { _ in
+                fromVC.endAppearanceTransition()
+                toVC.endAppearanceTransition()
+                
                 fromVC.view.removeFromSuperview()
                 transitionContext.completeTransition(!transitionContext.transitionWasCancelled)
             }
