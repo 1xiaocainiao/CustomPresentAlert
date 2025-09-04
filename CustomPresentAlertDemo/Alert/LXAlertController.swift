@@ -21,16 +21,21 @@ class LXAlertController: UIViewController {
         label.textAlignment = .center
         label.numberOfLines = 0
         label.font = UIFont.boldSystemFont(ofSize: 18)
+        label.setContentCompressionResistancePriority(.required, for: .vertical)
         return label
     }()
     
-    private let messageLabel: UILabel = {
-        let label = UILabel()
+    private let messageLabel: UITextView = {
+        let label = UITextView()
         label.textAlignment = .center
-        label.numberOfLines = 0
         label.font = UIFont.systemFont(ofSize: 16)
+        label.isScrollEnabled = false
+        
+        let padding = label.textContainer.lineFragmentPadding
+        label.textContainerInset = UIEdgeInsets(top: 0, left: -padding, bottom: 0, right: -padding)
         return label
     }()
+    private var messageHeightConstraint: NSLayoutConstraint!
     
     private let actionSheetScrollContinar = UIView()
     private let actionSheetScrollView: UIScrollView = {
@@ -112,7 +117,8 @@ class LXAlertController: UIViewController {
     
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        updateScrollContainerHeight()
+        
+        updateMessageAndContentHeight()
     }
     
     @discardableResult
@@ -160,6 +166,8 @@ class LXAlertController: UIViewController {
         
         if let message = messageLabel.text, !message.isEmpty {
             mainStackView.addArrangedSubview(messageLabel)
+            messageLabel.translatesAutoresizingMaskIntoConstraints = false
+            messageHeightConstraint = messageLabel.heightAnchor.constraint(equalToConstant: 0)
         }
         
         if isActionSheetMode {
@@ -255,58 +263,6 @@ class LXAlertController: UIViewController {
         scrollContainerHeightConstraint?.isActive = true
     }
     
-    private func updateScrollContainerHeight() {
-        guard isActionSheetMode else { return }
-        
-        alertActionButtonContainer.isHidden = alertActionButtonStackView.arrangedSubviews.isEmpty
-        
-        self.view.layoutIfNeeded()
-        
-        // 1. 计算内容实际高度
-        actionSheetScrollStackView.setNeedsLayout()
-        actionSheetScrollStackView.layoutIfNeeded()
-        // actionSheetScrollStackView的实际高度
-        let actionSheetContentHeight = actionSheetScrollStackView.systemLayoutSizeFitting(
-            CGSize(width: actionSheetScrollStackView.bounds.width, height: UIView.layoutFittingCompressedSize.height),
-            withHorizontalFittingPriority: .required,
-            verticalFittingPriority: .fittingSizeLevel
-        ).height
-        
-        let window = view.window ?? UIApplication.shared.windows.first ?? UIWindow()
-        let topInset = window.safeAreaInsets.top
-        let bottomInset = window.safeAreaInsets.bottom
-        
-        /// 2. 计算actionSheet高度
-        var actionHeight: CGFloat = actionSheetTopSpacingToSafeArea + Self.mainStackTop + Self.mainStackBottom
-        if let title = titleLabel.text, !title.isEmpty {
-            let titleHeight = titleLabel.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
-            actionHeight += titleHeight
-        }
-        if let msg = messageLabel.text, !msg.isEmpty {
-            let messageHeight = messageLabel.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
-            
-            actionHeight += mainStackView.spacing
-            
-            actionHeight += messageHeight
-        }
-        actionHeight += mainStackView.spacing
-        
-        actionHeight += actionSheetCancelTopSpacingToContentView
-        let cancelHeight = actionSheetCancelButtonContainer.bounds.height
-        actionHeight += cancelHeight
-        /// actionSheet内容最大高度
-        let actionSheetContentMaxHeight = window.bounds.height - topInset - bottomInset - actionHeight
-        
-        let newHeight = min(actionSheetContentHeight, actionSheetContentMaxHeight)
-        scrollContainerHeightConstraint?.constant = newHeight
-        
-        actionSheetScrollView.isScrollEnabled = actionSheetContentHeight > actionSheetContentMaxHeight
-        
-        UIView.animate(withDuration: 0.0) {
-            self.view.layoutIfNeeded()
-        }
-    }
-    
     private func configureAppearance() {
         contentView.backgroundColor = .white
         
@@ -371,11 +327,75 @@ class LXAlertController: UIViewController {
             alertActionButtonStackView.bottomAnchor.constraint(equalTo: alertActionButtonContainer.bottomAnchor)
         ])
         
-        if isActionSheetMode {
-            DispatchQueue.main.async {
-                self.updateScrollContainerHeight()
-            }
+        updateMessageAndContentHeight()
+    }
+    
+    private func updateMessageAndContentHeight() {
+        self.view.layoutIfNeeded()
+        
+        let window = view.window ?? UIApplication.shared.windows.first ?? UIWindow()
+        let topInset = window.safeAreaInsets.top
+        let bottomInset = window.safeAreaInsets.bottom
+        
+        /// 排除内容的间距，内容高度
+        var height: CGFloat = actionSheetTopSpacingToSafeArea + Self.mainStackTop + Self.mainStackBottom
+        if let title = titleLabel.text, !title.isEmpty {
+            let titleHeight = titleLabel.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
+            height += titleHeight
         }
+        if let msg = messageLabel.text, !msg.isEmpty {
+            let messageHeight = messageLabel.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
+            
+            height += mainStackView.spacing
+            
+            height += messageHeight
+        }
+        
+        if isActionSheetMode {
+            alertActionButtonContainer.isHidden = alertActionButtonStackView.arrangedSubviews.isEmpty
+            
+            height += mainStackView.spacing
+            
+            let actionSheetContentHeight = actionSheetScrollStackView.systemLayoutSizeFitting(
+                CGSize(width: actionSheetScrollStackView.bounds.width, height: UIView.layoutFittingCompressedSize.height),
+                withHorizontalFittingPriority: .required,
+                verticalFittingPriority: .fittingSizeLevel
+            ).height
+            
+            height += actionSheetCancelTopSpacingToContentView
+            let cancelHeight = actionSheetCancelButtonContainer.bounds.height
+            height += cancelHeight
+            /// actionSheet内容最大高度
+            let actionSheetContentMaxHeight = window.bounds.height - topInset - bottomInset - height
+            
+            let newHeight = min(actionSheetContentHeight, actionSheetContentMaxHeight)
+            scrollContainerHeightConstraint?.constant = newHeight
+            
+            actionSheetScrollView.isScrollEnabled = actionSheetContentHeight > actionSheetContentMaxHeight
+        } else {
+            if !textFields.isEmpty {
+                height += CGFloat(textFields.count) * mainStackView.spacing
+            }
+            
+            let alertBtnHeight = alertActionButtonContainer.bounds.height
+            height += mainStackView.spacing
+            height += alertBtnHeight
+            
+            let messageMaxHeight = window.bounds.height - topInset - bottomInset - height
+            
+            let messageHeight = messageLabel.systemLayoutSizeFitting(
+                CGSize(width: messageLabel.bounds.width, height: UIView.layoutFittingCompressedSize.height),
+                withHorizontalFittingPriority: .required,
+                verticalFittingPriority: .fittingSizeLevel
+            ).height
+            
+            let newHeight = min(messageHeight, messageMaxHeight)
+            messageHeightConstraint.constant = newHeight
+            
+            messageLabel.isScrollEnabled = messageHeight > messageMaxHeight
+        }
+        
+        contentView.layoutIfNeeded()
     }
     
     private func createButton(for action: LXAlertAction) -> UIButton {
