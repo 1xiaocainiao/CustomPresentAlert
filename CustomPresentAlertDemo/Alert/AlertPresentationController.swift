@@ -44,7 +44,7 @@ class AlertPresentationController: UIPresentationController {
         guard let container = containerView else { return .zero }
         
         let safeWidth = UIDevice.current.userInterfaceIdiom == .pad ? 320 : container.bounds.width - 2 * config.horizontalMargin
-        let maxHeight = container.bounds.height - container.safeAreaInsets.top
+        let maxHeight = container.bounds.height - container.safeAreaInsets.top - container.safeAreaInsets.bottom
         
         // 计算内容尺寸
         var contentSize = presentedViewController.view.systemLayoutSizeFitting(
